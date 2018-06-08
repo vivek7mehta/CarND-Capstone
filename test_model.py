@@ -4,6 +4,7 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageColor
 import time
+import cv2
 
 SSD_GRAPH_FILE = 'frozen_inference_graph.pb'
 cmap = ImageColor.colormap
@@ -78,6 +79,7 @@ detection_classes = detection_graph.get_tensor_by_name('detection_classes:0')
 
 
 image = Image.open('./data/real_training_data/green/left0000.jpg')
+imagecv = cv2.imread('')
 image_np = np.expand_dims(np.asarray(image, dtype=np.uint8), 0)
 
 
@@ -98,8 +100,32 @@ with tf.Session(graph=detection_graph) as sess:
     # The current box coordinates are normalized to a range between 0 and 1.
     # This converts the coordinates actual location on the image.
     width, height = image.size
-    box_coords = to_image_coords(boxes, height, width)
+	box_coords = to_image_coords(boxes, height, width)
+	
+	# classification
+	traffic_light = imagecv[box_coords[0]:box_coords[2] , box_coords[1]:box_coords[3]]
+	
+	
+	R,G,B = cv2.split(traffic_light)
+	Y,Cb,Cr =  cv2.split(cv2.cvtColor(traffic_light,cv_RGB2YCRCB))
+	cb_threshold = cv.threshold(cb,50,255,cv.THRESH_BINARY)
 
+	non_zero_yellow = np.nonzero(cb_threshold)
+
+	#R = cv.threshold(R,100,255,cv.THRESH_BINARY)
+	R[non_zero_yellow] = 0
+	#G = cv.threshold(G,100,255,cv.THRESH_BINARY)
+	G[non_zero_yellow] = 0
+
+	count_R = len(np.nonzero(R))
+	count_G = len(np.nonzero(G))
+
+
+	if(countR > countG):
+		print("Red light")
+	else:
+		print("Green Light")
+	#
     # Each class with be represented by a differently colored box
     draw_boxes(image, box_coords, classes)
 	
